@@ -4,25 +4,38 @@ import rl "github.com/gen2brain/raylib-go/raylib"
 import "image/color"
 
 func main () {
-     black := color.RGBA {0, 0, 0, 255}
-     //red := color.RGBA {255, 0, 0, 255}
-     green := color.RGBA {0, 255, 0, 255}
-     var factor int32
+     var factor float32
      factor = 100
-     rl.InitWindow (16*factor, 9*factor, "Tic-Tac-Toe")
+     rl.InitWindow (int32(16*factor), int32(9*factor), "Tic-Tac-Toe")
      x := 16*factor ; y := 9*factor
      defer rl.CloseWindow()
      for !rl.WindowShouldClose() {
           rl.BeginDrawing()
-               rl.ClearBackground (black)
-               rl.DrawLine(0, 0, 0, y, green)
-               rl.DrawLine(x/3, 0, x/3, y, green)
-               rl.DrawLine(2*x/3, 0, 2*x/3, y, green)
-               rl.DrawLine(x, 0, x, y, green)
-               rl.DrawLine(0, 0, x, 0, green)
-               rl.DrawLine(0, y/3, x, y/3, green)
-               rl.DrawLine(0, 2*y/3, x, 2*y/3, green)
-               rl.DrawLine(0, y, x, y, green)
+               rl.ClearBackground (rl.Black)
+               draw_grid(x, y, rl.Green, y/100)
+               //pos := rl.GetMousePosition()
+               //mark_grid (pos, red, blue)
+               if rl.IsKeyPressed (rl.KeyQ) {
+                    break
+               }
           rl.EndDrawing()
      }
 }
+
+func draw_grid (x float32, y float32, c color.RGBA, t float32) {
+     rl.DrawLineEx(rl.Vector2{0, 0}, rl.Vector2{0, y}, t, c)
+     rl.DrawLineEx(rl.Vector2{x/3, 0}, rl.Vector2{x/3, y}, t, c)
+     rl.DrawLineEx(rl.Vector2{2*x/3, 0}, rl.Vector2{2*x/3, y}, t, c)
+     rl.DrawLineEx(rl.Vector2{x, 0}, rl.Vector2{x, y}, t, c)
+     rl.DrawLineEx(rl.Vector2{0, 0}, rl.Vector2{x, 0}, t, c)
+     rl.DrawLineEx(rl.Vector2{0, y/3}, rl.Vector2{x, y/3}, t, c)
+     rl.DrawLineEx(rl.Vector2{0, 2*y/3}, rl.Vector2{x, 2*y/3}, t, c)
+     rl.DrawLineEx(rl.Vector2{0, y}, rl.Vector2{x, y}, t, c)
+}
+
+/*
+func mark_grid (pos Vector2, x_color color.RGBA, o_color color.RGBA) {
+     if pos.x > 0 && pos.x < x/3 && pos.y == 0 {
+     }
+}
+*/
