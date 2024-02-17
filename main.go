@@ -186,7 +186,8 @@ func check_condition (grid *[][]byte, grid_size int32) byte {
         (*grid)[i][j] != ' ' {
           return (*grid)[i][j]
      }
-     if (*grid)[i][j] == (*grid)[i-1][j+1] && (*grid)[i][j] == (*grid)[i+1][j-1] {
+     if (*grid)[i][j] == (*grid)[i-1][j+1] && (*grid)[i][j] == (*grid)[i+1][j-1] &&
+        (*grid)[i][j] != ' ' {
           return (*grid)[i][j]
      }
      for j = 0; j < grid_size; j++ {
