@@ -8,11 +8,13 @@ package main
 import rl "github.com/gen2brain/raylib-go/raylib"
 import "image/color"
 import "fmt"
+import "math/rand"
 
 const grid_size = 3
 
 func main () {
      var factor float32
+     var symbol byte
      var symbol_color color.RGBA
      var bg color.RGBA
      factor = 100
@@ -38,6 +40,8 @@ func main () {
      bg = rl.Black
      sel_color := rl.Gray
      sel_color.A = 100
+     turn := rand.Intn(2) == 1
+     set_turn (&turn, &symbol)
      for !rl.WindowShouldClose() {
           rl.BeginDrawing()
                rl.ClearBackground (bg)
@@ -45,7 +49,7 @@ func main () {
                y = float32(rl.GetScreenHeight())
                font_size := int32(x/10)
                draw_grid(x, y, rl.Green, y/100)
-               mark_grid(x, y, &grid, &rec, sel_color, grid_size)
+               mark_grid(x, y, &grid, &rec, sel_color, grid_size, &turn, &symbol)
                for i := 0; i < grid_size; i++ {
                     for j := 0; j < grid_size; j++ {
                          textX := int32(rec[i][j].X + rec[i][j].Width/2) - rl.MeasureText(string(grid[i][j]), font_size)/2
@@ -96,7 +100,16 @@ func test_grid (grid [][]byte, grid_size int) {
      }
 }
 
-func mark_grid (x, y float32, grid *[][]byte, rec *[][] rl.Rectangle, grid_bg color.RGBA, grid_size int) {
+func set_turn (turn *bool, symbol *byte) {
+     if *turn {
+          *symbol = 'x'
+     } else {
+          *symbol = 'o'
+     }
+     *turn = !*turn
+}
+
+func mark_grid (x, y float32, grid *[][]byte, rec *[][] rl.Rectangle, grid_bg color.RGBA, grid_size int, turn *bool, symbol *byte) {
      sel_color := grid_bg
      sel_color.A = 100
      mouse := rl.GetMousePosition()
@@ -160,10 +173,8 @@ func mark_grid (x, y float32, grid *[][]byte, rec *[][] rl.Rectangle, grid_bg co
                     rl.DrawRectangleRec ((*rec)[i][j], sel_color)
                     if (*grid)[i][j] == ' ' {
                          if rl.IsMouseButtonPressed (rl.MouseButtonLeft) {
-                              (*grid)[i][j] = 'x'
-                         }
-                         if rl.IsMouseButtonPressed (rl.MouseButtonRight) {
-                              (*grid)[i][j] = 'o'
+                              set_turn (turn, symbol)
+                              (*grid)[i][j] = *symbol
                          }
                     }
                }
