@@ -8,9 +8,16 @@ package main
 import rl "github.com/gen2brain/raylib-go/raylib"
 import "image/color"
 import "fmt"
+import "os"
+import "log"
 import "math/rand"
 
 const grid_size = 3
+const (
+     Menu int = 0
+     Game = 1
+     End = 2
+)
 
 func main () {
      var factor float32
@@ -41,6 +48,7 @@ func main () {
      sel_color := rl.Gray
      sel_color.A = 100
      turn := rand.Intn(2) == 1
+     init_state := Menu
      set_turn (&turn, &symbol)
      for !rl.WindowShouldClose() {
           rl.BeginDrawing()
@@ -59,6 +67,7 @@ func main () {
                          } else {
                               symbol_color = rl.Blue
                          }
+                         state_machine (&init_state, x, y);
                          rl.DrawText(string(grid[i][j]), textX, textY, font_size, symbol_color)
                          if check_condition (&grid, grid_size) == 'x' {
                               msg := "x won"
@@ -78,6 +87,38 @@ func main () {
           rl.EndDrawing()
      }
      test_grid(grid, grid_size)
+}
+
+func state_machine (game_state *int, x float32, y float32) {
+     var canvas rl.Vector2
+     var canvas2 rl.Vector2
+     var font_size int32
+     canvas.X = x;
+     canvas.Y = y;
+     switch (*game_state) {
+          case Menu:
+               rl.DrawRectangle (0, 0, int32(canvas.X), int32(canvas.Y), rl.Gray);
+               title := "Tic-Tac-Toe"
+               font_size = int32(canvas.Y/100)
+               canvas2.X = canvas.X/2 - float32(rl.MeasureText (title, font_size)/2)
+               canvas2.Y = canvas.Y/2- float32(font_size/2)
+               rl.DrawText (title, int32(canvas2.Y), int32(canvas2.Y), font_size, rl.White);
+               if rl.IsKeyPressed (rl.KeyQ) || rl.IsKeyPressed (rl.KeyEscape) {
+                    *game_state = End
+               }
+               break
+          case Game:
+               if rl.IsKeyPressed (rl.KeyQ) || rl.IsKeyPressed (rl.KeyEscape) {
+                    *game_state = Menu
+               }
+               break
+          case End:
+               os.Exit(0);
+               break
+          default: {
+               log.Fatal ("Unknown game state!")
+          }
+     }
 }
 
 func draw_grid (x, y float32, c color.RGBA, t float32) {
