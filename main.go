@@ -14,16 +14,32 @@ import "math/rand"
 
 const grid_size = 3
 const (
-     Menu int = 0
-     Game = 1
-     End = 2
+     Menu int = iota
+     Game
+     End
 )
+
+const (
+     play_button int = iota
+     quit_button
+     last
+)
+
+type Button struct {
+     label string
+     box rl.Rectangle
+     bg color.RGBA
+     fg color.RGBA
+}
 
 func main () {
      var factor float32
      var symbol byte
      var symbol_color color.RGBA
      var bg color.RGBA
+     buttons := make ([]Button, last)
+     init_button (&buttons[play_button], rl.Black, rl.White, "Play")
+     init_button (&buttons[quit_button], rl.Black, rl.White, "Quit")
      factor = 100
      grid := make ([][]byte, grid_size)
      for i := range grid {
@@ -67,7 +83,7 @@ func main () {
                          } else {
                               symbol_color = rl.Blue
                          }
-                         state_machine (&init_state, x, y);
+                         state_machine (&init_state, x, y, &buttons)
                          rl.DrawText(string(grid[i][j]), textX, textY, font_size, symbol_color)
                          if check_condition (&grid, grid_size) == 'x' {
                               msg := "x won"
@@ -89,7 +105,13 @@ func main () {
      test_grid(grid, grid_size)
 }
 
-func state_machine (game_state *int, x float32, y float32) {
+func init_button (button *Button, bg color.RGBA, fg color.RGBA, label string) {
+     (*button).bg = bg
+     (*button).fg = fg
+     (*button).label = label
+}
+
+func state_machine (game_state *int, x float32, y float32, button *[]Button) {
      var canvas rl.Vector2
      var canvas2 rl.Vector2
      var font_size int32
@@ -97,12 +119,33 @@ func state_machine (game_state *int, x float32, y float32) {
      canvas.Y = y;
      switch (*game_state) {
           case Menu:
-               rl.DrawRectangle (0, 0, int32(canvas.X), int32(canvas.Y), rl.Gray);
+               rl.DrawRectangle (0, 0, int32(canvas.X), int32(canvas.Y), rl.Green);
                title := "Tic-Tac-Toe"
-               font_size = int32(canvas.Y/100)
+               font_size = int32(canvas.Y/10)
                canvas2.X = canvas.X/2 - float32(rl.MeasureText (title, font_size)/2)
-               canvas2.Y = canvas.Y/2- float32(font_size/2)
-               rl.DrawText (title, int32(canvas2.Y), int32(canvas2.Y), font_size, rl.White);
+               canvas2.Y = canvas.Y/4 - float32(font_size/2)
+               rl.DrawText (title, int32(canvas2.X), int32(canvas2.Y), font_size, rl.Black)
+
+               text_x := canvas.X/2 - float32(rl.MeasureText ((*button)[play_button].label, font_size)/2)
+               text_y := canvas.Y/2
+               text_box_w := float32(rl.MeasureText ((*button)[play_button].label, font_size))
+               text_box_h := float32(font_size)
+
+               (*button)[play_button].box.Width = text_box_w
+               (*button)[play_button].box.Height = text_box_h
+               //rl.DrawRectangleLinesEx ((*button)[play_button].box, canvas.Y/100, (*button)[play_button].fg)
+               rl.DrawText ((*button)[play_button].label, int32(text_x), int32(text_y), font_size, (*button)[play_button].fg)
+
+               text_x = canvas.X/2 - float32(rl.MeasureText ((*button)[quit_button].label, font_size)/2)
+               text_y = 3*canvas.Y/4
+               text_box_w = float32(rl.MeasureText ((*button)[quit_button].label, font_size))
+               text_box_h = float32(font_size)
+
+               (*button)[play_button].box.Width = text_box_w
+               (*button)[play_button].box.Height = text_box_h
+               //rl.DrawRectangleLinesEx ((*button)[quit_button].box, canvas.Y/100, (*button)[quit_button].fg)
+               rl.DrawText ((*button)[quit_button].label, int32(text_x), int32(text_y), font_size, (*button)[quit_button].fg)
+
                if rl.IsKeyPressed (rl.KeyQ) || rl.IsKeyPressed (rl.KeyEscape) {
                     *game_state = End
                }
