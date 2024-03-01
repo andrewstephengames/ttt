@@ -35,11 +35,11 @@ type Button struct {
 func main () {
      var factor float32
      var symbol byte
-     var symbol_color color.RGBA
      var bg color.RGBA
      buttons := make ([]Button, last)
-     init_button (&buttons[play_button], rl.Black, rl.White, "Play")
-     init_button (&buttons[quit_button], rl.Black, rl.White, "Quit")
+     button_color := rl.SkyBlue
+     init_button (&buttons[play_button], button_color, rl.White, "Play")
+     init_button (&buttons[quit_button], button_color, rl.White, "Quit")
      factor = 100
      grid := make ([][]byte, grid_size)
      for i := range grid {
@@ -55,9 +55,9 @@ func main () {
           }
      }
      rl.SetTraceLogLevel (rl.LogError)
+     rl.SetConfigFlags (rl.FlagWindowResizable)
      rl.InitWindow (int32(16*factor), int32(9*factor), "Tic-Tac-Toe")
      x := 16*factor ; y := 9*factor
-     rl.SetConfigFlags (rl.FlagWindowResizable)
      rl.SetTargetFPS(60)
      defer rl.CloseWindow()
      bg = rl.Black
@@ -71,27 +71,11 @@ func main () {
                rl.ClearBackground (bg)
                x = float32(rl.GetScreenWidth())
                y = float32(rl.GetScreenHeight())
-               font_size := int32(x/10)
-               draw_grid(x, y, rl.Green, y/100)
+               draw_grid(x, y, rl.SkyBlue, y/100)
                mark_grid(x, y, &grid, &rec, sel_color, grid_size, &turn, &symbol)
                for i := 0; i < grid_size; i++ {
                     for j := 0; j < grid_size; j++ {
-                         textX := int32(rec[i][j].X + rec[i][j].Width/2) - rl.MeasureText(string(grid[i][j]), font_size)/2
-                         textY := int32(rec[i][j].Y + rec[i][j].Height/2) - font_size/2
-                         if grid[i][j] == 'x' {
-                              symbol_color = rl.Red
-                         } else {
-                              symbol_color = rl.Blue
-                         }
-                         state_machine (&init_state, x, y, &buttons)
-                         rl.DrawText(string(grid[i][j]), textX, textY, font_size, symbol_color)
-                         if check_condition (&grid, grid_size) == 'x' {
-                              msg := "x won"
-                              rl.DrawText (msg, int32(x/2)-rl.MeasureText (msg, int32(factor))/2, int32(y/2)-int32(factor/2), int32(factor), rl.Yellow)
-                         } else if check_condition (&grid, grid_size) == 'o' {
-                              msg := "o won"
-                              rl.DrawText (msg, int32(x/2)-rl.MeasureText (msg, int32(factor))/2, int32(y/2)-int32(factor/2), int32(factor), rl.Yellow)
-                         }
+                         state_machine (&init_state, x, y, &buttons, &rec, &grid, grid_size, factor);
                     }
                }
                if rl.IsKeyPressed (rl.KeyQ) {
@@ -111,20 +95,29 @@ func init_button (button *Button, bg color.RGBA, fg color.RGBA, label string) {
      (*button).label = label
 }
 
-func state_machine (game_state *int, x float32, y float32, button *[]Button) {
+func get_sel_color () color.RGBA {
+     var scale uint8
+     scale = 20
+     sel_color := color.RGBA { rl.SkyBlue.R - scale, rl.SkyBlue.G - scale, rl.SkyBlue.B - scale, uint8(255)}
+     return sel_color
+}
+
+func state_machine (game_state *int, x float32, y float32, button *[]Button, rec *[][]rl.Rectangle, grid *[][]byte, grid_size int, factor float32) {
      var canvas rl.Vector2
      var canvas2 rl.Vector2
      var font_size int32
+     var game_font_size int32
+     var symbol_color color.RGBA
      canvas.X = x;
      canvas.Y = y;
      switch (*game_state) {
           case Menu:
-               rl.DrawRectangle (0, 0, int32(canvas.X), int32(canvas.Y), rl.Green);
+               rl.DrawRectangle (0, 0, int32(canvas.X), int32(canvas.Y), rl.SkyBlue);
                title := "Tic-Tac-Toe"
                font_size = int32(canvas.Y/10)
                canvas2.X = canvas.X/2 - float32(rl.MeasureText (title, font_size)/2)
                canvas2.Y = canvas.Y/4 - float32(font_size/2)
-               rl.DrawText (title, int32(canvas2.X), int32(canvas2.Y), font_size, rl.Black)
+               rl.DrawText (title, int32(canvas2.X), int32(canvas2.Y), font_size, rl.White)
 
                text_x := canvas.X/2 - float32(rl.MeasureText ((*button)[play_button].label, font_size)/2)
                text_y := canvas.Y/2
@@ -133,7 +126,17 @@ func state_machine (game_state *int, x float32, y float32, button *[]Button) {
 
                (*button)[play_button].box.Width = text_box_w
                (*button)[play_button].box.Height = text_box_h
-               //rl.DrawRectangleLinesEx ((*button)[play_button].box, canvas.Y/100, (*button)[play_button].fg)
+               (*button)[play_button].box.X = text_x
+               (*button)[play_button].box.Y = text_y
+               if rl.CheckCollisionPointRec (rl.GetMousePosition(), (*button)[play_button].box) {
+                    (*button)[play_button].bg = get_sel_color()
+                    if rl.IsMouseButtonPressed (rl.MouseButtonLeft) {
+                         *game_state = Game
+                    }
+               } else {
+                    (*button)[play_button].bg = rl.SkyBlue
+               }
+               rl.DrawRectangleRec ((*button)[play_button].box, (*button)[play_button].bg)
                rl.DrawText ((*button)[play_button].label, int32(text_x), int32(text_y), font_size, (*button)[play_button].fg)
 
                text_x = canvas.X/2 - float32(rl.MeasureText ((*button)[quit_button].label, font_size)/2)
@@ -141,9 +144,19 @@ func state_machine (game_state *int, x float32, y float32, button *[]Button) {
                text_box_w = float32(rl.MeasureText ((*button)[quit_button].label, font_size))
                text_box_h = float32(font_size)
 
-               (*button)[play_button].box.Width = text_box_w
-               (*button)[play_button].box.Height = text_box_h
-               //rl.DrawRectangleLinesEx ((*button)[quit_button].box, canvas.Y/100, (*button)[quit_button].fg)
+               (*button)[quit_button].box.Width = text_box_w
+               (*button)[quit_button].box.Height = text_box_h
+               (*button)[quit_button].box.X = text_x
+               (*button)[quit_button].box.Y = text_y
+               if rl.CheckCollisionPointRec (rl.GetMousePosition(), (*button)[quit_button].box) {
+                    (*button)[quit_button].bg = get_sel_color()
+                    if rl.IsMouseButtonPressed (rl.MouseButtonLeft) {
+                         *game_state = End
+                    }
+               } else {
+                    (*button)[quit_button].bg = rl.SkyBlue
+               }
+               rl.DrawRectangleRec ((*button)[quit_button].box, (*button)[quit_button].bg)
                rl.DrawText ((*button)[quit_button].label, int32(text_x), int32(text_y), font_size, (*button)[quit_button].fg)
 
                if rl.IsKeyPressed (rl.KeyQ) || rl.IsKeyPressed (rl.KeyEscape) {
@@ -151,6 +164,29 @@ func state_machine (game_state *int, x float32, y float32, button *[]Button) {
                }
                break
           case Game:
+               game_font_size = int32(x/10)
+               for i := 0; i < grid_size; i++ {
+                    for j := 0; j < grid_size; j++ {
+                         textX := int32((*rec)[i][j].X + (*rec)[i][j].Width/2) - rl.MeasureText(string((*grid)[i][j]), game_font_size)/2
+                         textY := int32((*rec)[i][j].Y + (*rec)[i][j].Height/2) - game_font_size/2
+                         if (*grid)[i][j] == 'x' {
+                              symbol_color = rl.Red
+                         } else {
+                              symbol_color = rl.Blue
+                         }
+                         rl.DrawText(string((*grid)[i][j]), textX, textY, game_font_size, symbol_color)
+                         if check_condition (grid, int32(grid_size)) == 'x' {
+                              msg := "x won"
+                              rl.DrawText (msg, int32(x/2)-rl.MeasureText (msg, int32(factor))/2, int32(y/2)-int32(factor/2), int32(factor), rl.Yellow)
+                         } else if check_condition (grid, int32(grid_size)) == 'o' {
+                              msg := "o won"
+                              rl.DrawText (msg, int32(x/2)-rl.MeasureText (msg, int32(factor))/2, int32(y/2)-int32(factor/2), int32(factor), rl.Yellow)
+                         } else if is_draw (grid, int32(grid_size)) {
+                              msg := "draw"
+                              rl.DrawText (msg, int32(x/2)-rl.MeasureText (msg, int32(factor))/2, int32(y/2)-int32(factor/2), int32(factor), rl.Yellow)
+                         }
+                    }
+               }
                if rl.IsKeyPressed (rl.KeyQ) || rl.IsKeyPressed (rl.KeyEscape) {
                     *game_state = Menu
                }
@@ -292,6 +328,19 @@ func check_condition (grid *[][]byte, grid_size int32) byte {
           }
      }
      return ' '
+}
+
+func is_draw (grid *[][]byte, grid_size int32) bool {
+     var i, j int32
+     has_space := false
+     for i = 0; i < grid_size; i++ {
+          for j = 0; j < grid_size; j++ {
+               if (*grid)[i][j] == ' ' {
+                    has_space = true
+               }
+          }
+     }
+     return !has_space
 }
 
 func reset_grid (grid *[][]byte, grid_size int32) {
