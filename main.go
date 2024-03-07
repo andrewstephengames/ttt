@@ -66,13 +66,24 @@ func main () {
      turn := rand.Intn(2) == 1
      init_state := Menu
      set_turn (&turn, &symbol)
+     var symbol_size int32
+     var next_symbol byte
      for !rl.WindowShouldClose() {
           rl.BeginDrawing()
                rl.ClearBackground (bg)
                x = float32(rl.GetScreenWidth())
                y = float32(rl.GetScreenHeight())
                draw_grid(x, y, rl.SkyBlue, y/100)
-               mark_grid(x, y, &grid, &rec, sel_color, grid_size, &turn, &symbol)
+               if init_state == Game {
+                    mark_grid(x, y, &grid, &rec, sel_color, grid_size, &turn, &symbol)
+               }
+               symbol_size = int32(x/100)
+               if symbol == 'x' {
+                    next_symbol = 'o'
+               } else {
+                    next_symbol = 'x'
+               }
+               rl.DrawText (fmt.Sprintf ("Turn: %c", next_symbol), symbol_size, symbol_size, symbol_size*5, rl.Yellow);
                for i := 0; i < grid_size; i++ {
                     for j := 0; j < grid_size; j++ {
                          state_machine (&init_state, x, y, &buttons, &rec, &grid, grid_size, factor);
@@ -155,6 +166,9 @@ func state_machine (game_state *int, x float32, y float32, button *[]Button, rec
                     }
                } else {
                     (*button)[quit_button].bg = rl.SkyBlue
+               }
+               if rl.IsKeyPressed (rl.KeyEnter) || rl.IsKeyPressed (rl.KeySpace) {
+                    *game_state = Game
                }
                rl.DrawRectangleRec ((*button)[quit_button].box, (*button)[quit_button].bg)
                rl.DrawText ((*button)[quit_button].label, int32(text_x), int32(text_y), font_size, (*button)[quit_button].fg)
